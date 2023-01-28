@@ -28,18 +28,39 @@ internal class MessageManager : IMessageSender, IDisposable
         {
             Channel.BasicQos(0, messageManagerSettings.QueuePrefetchCount, false);
         }
+        
+        Channel.ExchangeDeclare(messageManagerSettings.ExchangeName,
+            type: ExchangeType.Direct,
+            true,
+            false);
 
-        Channel.ExchangeDeclare(messageManagerSettings.ExchangeName, ExchangeType.Direct, durable: true);
+        Channel.ExchangeDeclare($"{messageManagerSettings.ExchangeName}_retry",
+            type: ExchangeType.Direct,
+            true,
+            false);
 
         foreach (var queue in queueSettings.Queues)
         {
             var args = new Dictionary<string, object>
             {
-                [MaxPriorityHeader] = 10
+                [MaxPriorityHeader] = 10,
+                ["x-dead-letter-exchange"] = $"{messageManagerSettings.ExchangeName}_retry",
             };
 
-            Channel.QueueDeclare(queue.Name, durable: true, exclusive: false, autoDelete: false, args);
-            Channel.QueueBind(queue.Name, messageManagerSettings.ExchangeName, queue.Name, null);
+            Channel.QueueDeclare(queue.Name, durable: true, exclusive: false, autoDelete: true, args);
+            Channel.QueueBind(queue.Name, messageManagerSettings.ExchangeName, $"{queue.Name}");
+
+            //------------------
+
+            var args2 = new Dictionary<string, object>
+            {
+                [MaxPriorityHeader] = 10,
+                ["x-dead-letter-exchange"] = $"{messageManagerSettings.ExchangeName}",
+                ["x-message-ttl"] = 5000
+            };
+            Channel.QueueDeclare($"{queue.Name}_retry", durable: true, exclusive: false, autoDelete: true, arguments: args2);
+            Channel.QueueBind($"{queue.Name}_retry", $"{messageManagerSettings.ExchangeName}_retry", $"{queue.Name}"); 
+
         }
 
         this.messageManagerSettings = messageManagerSettings;
@@ -66,7 +87,8 @@ internal class MessageManager : IMessageSender, IDisposable
 
     public void MarkAsComplete(BasicDeliverEventArgs message) => Channel.BasicAck(message.DeliveryTag, false);
 
-    public void MarkAsRejected(BasicDeliverEventArgs message) => Channel.BasicReject(message.DeliveryTag, false);
+    public void MarkAsRejected(BasicDeliverEventArgs message) => Channel.BasicNack(message.DeliveryTag, false, false);
+    
 
     public void Dispose()
     {

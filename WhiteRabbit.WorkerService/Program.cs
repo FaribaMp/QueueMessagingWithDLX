@@ -1,6 +1,6 @@
 using WhiteRabbit.Messaging.RabbitMq;
-using WhiteRabbit.Receivers;
 using WhiteRabbit.Shared;
+using WhiteRabbit.WorkerService.Receivers;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices(ConfigureServices)

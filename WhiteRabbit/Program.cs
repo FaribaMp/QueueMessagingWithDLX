@@ -29,9 +29,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     {
         queues.Add<Order>();
         queues.Add<Invoice>();
-    })
-    .AddReceiver<Order, OrderMessageReceiver>()
-    .AddReceiver<Invoice, InvoiceMessageReceiver>();
+    });
+    //.AddReceiver<Order, OrderMessageReceiver>()
+    //.AddReceiver<Invoice, InvoiceMessageReceiver>();
 
     //services.AddServiceBus(settings =>
     //{

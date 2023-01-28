@@ -1,7 +1,7 @@
 ﻿using WhiteRabbit.Messaging.Abstractions;
 using WhiteRabbit.Shared;
 
-namespace WhiteRabbit.Receivers;
+namespace WhiteRabbit.WorkerService.Receivers;
 
 public class InvoiceMessageReceiver : IMessageReceiver<Invoice>
 {
@@ -14,10 +14,16 @@ public class InvoiceMessageReceiver : IMessageReceiver<Invoice>
 
     public async Task ReceiveAsync(Invoice message, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Creating invoice for order {OrderNumber}...", message.OrderNumber);
+        if (message.OrderNumber % 5 == 0)
+        {
+            //Thread.Sleep(3000);
+            throw new Exception("This is test");
+        }
 
-        await Task.Delay(TimeSpan.FromSeconds(10 + Random.Shared.Next(10)));
+        logger.LogInformation("WS-INVOICE : Creating invoice for order {OrderNumber}...", message.OrderNumber);
 
-        logger.LogInformation("End creating invoice for order {OrderNumber}", message.OrderNumber);
+        await Task.Delay(1000); //TimeSpan.FromSeconds(10 + Random.Shared.Next(10)));
+
+        logger.LogInformation("WS-INVOICE : End creating invoice for order {OrderNumber}", message.OrderNumber);
     }
 }
